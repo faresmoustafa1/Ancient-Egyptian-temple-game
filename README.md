@@ -162,5 +162,6 @@ Emscripten and publishes it to GitHub Pages. To enable it on a fork: **Settings 
 
 Built as a team computer graphics project by
 [@faresmoustafa1](https://github.com/faresmoustafa1),
-[@eman383](https://github.com/eman383) and
-[@mernahossamsabra-spec](https://github.com/mernahossamsabra-spec).
+[@eman383](https://github.com/eman383),
+[@mernahossamsabra-spec](https://github.com/mernahossamsabra-spec) and
+[@3amrobaia](https://github.com/3amrobaia).
