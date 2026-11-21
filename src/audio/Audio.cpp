@@ -99,7 +99,13 @@ bool init() {
 
     // Background music: streamed from disk and looped for the whole session.
     const std::string musicPath = dir + "temple_suspense.wav";
-    if (ma_sound_init_from_file(&engine, musicPath.c_str(), MA_SOUND_FLAG_STREAM,
+#ifdef __EMSCRIPTEN__
+    // Single-threaded web build: streaming can't keep up, so decode it up front.
+    const ma_uint32 musicFlags = MA_SOUND_FLAG_DECODE;
+#else
+    const ma_uint32 musicFlags = MA_SOUND_FLAG_STREAM;
+#endif
+    if (ma_sound_init_from_file(&engine, musicPath.c_str(), musicFlags,
                                 nullptr, nullptr, &music) == MA_SUCCESS) {
         musicReady = true;
         ma_sound_set_looping(&music, MA_TRUE);

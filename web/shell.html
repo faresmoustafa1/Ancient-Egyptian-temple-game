@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ancient Egyptian Temple</title>
+  <meta name="description" content="A lane-defense game written in C++17 and OpenGL, compiled to WebAssembly. Defend the Temple of Ra against waves of the undead.">
+  <style>
+    :root {
+      --bg: #0d0a06;
+      --panel: #1a140c;
+      --gold: #d9a441;
+      --ivory: #f3e7c9;
+      --muted: #a8977a;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ivory);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 16px; gap: 12px; }
+    header { text-align: center; }
+    h1 { margin: 0; font-size: clamp(1.2rem, 2.6vw, 1.9rem); letter-spacing: .12em; color: var(--gold);
+      text-transform: uppercase; font-weight: 700; }
+    header p { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+    #stage { position: relative; width: min(100%, calc((100vh - 170px) * 16 / 9)); aspect-ratio: 16 / 9;
+      background: #000; border: 1px solid #3a2c17; border-radius: 6px; overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+    #canvas { display: block; width: 100%; height: 100%; outline: none; cursor: pointer; }
+    #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 14px; background: var(--panel); transition: opacity .4s; }
+    #overlay.hidden { opacity: 0; pointer-events: none; }
+    #status { color: var(--muted); font-size: .95rem; }
+    #bar { width: min(320px, 70%); height: 6px; background: #2b2113; border-radius: 3px; overflow: hidden; }
+    #bar > div { height: 100%; width: 0; background: var(--gold); transition: width .2s; }
+    .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: .85rem;
+      color: var(--muted); max-width: 900px; }
+    kbd { font: inherit; color: var(--ivory); background: #2b2113; border: 1px solid #4a3a20;
+      border-radius: 4px; padding: 1px 6px; }
+    footer { font-size: .8rem; color: var(--muted); }
+    footer a { color: var(--gold); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ancient Egyptian Temple</h1>
+    <p>C++17 &middot; OpenGL &rarr; WebAssembly / WebGL 2</p>
+  </header>
+
+  <div id="stage">
+    <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="overlay">
+      <div id="status">Loading the temple&hellip;</div>
+      <div id="bar"><div></div></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <span><kbd>Click</kbd> a lane, then a card to place a warrior</span>
+    <span><kbd>W</kbd>/<kbd>&uarr;</kbd> jump</span>
+    <span><kbd>S</kbd>/<kbd>&darr;</kbd> duck</span>
+    <span><kbd>Esc</kbd> pause</span>
+    <span><kbd>Enter</kbd> skip intro</span>
+    <span><kbd>M</kbd> mute</span>
+  </div>
+  <footer>Best on desktop with a keyboard and mouse. Click the game to enable sound.</footer>
+
+  <script>
+    var canvas = document.getElementById('canvas');
+    var overlay = document.getElementById('overlay');
+    var statusEl = document.getElementById('status');
+    var barEl = document.querySelector('#bar > div');
+
+    // Keep arrow keys / space from scrolling the page while playing.
+    window.addEventListener('keydown', function (e) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].indexOf(e.key) !== -1) e.preventDefault();
+    });
+    canvas.addEventListener('mousedown', function () { canvas.focus(); });
+
+    var Module = {
+      canvas: canvas,
+      print: function (t) { console.log(t); },
+      printErr: function (t) { console.warn(t); },
+      setStatus: function (text) {
+        if (!text) return;
+        var m = text.match(/\((\d+(?:\.\d+)?)\/(\d+)\)/);
+        if (m) barEl.style.width = (100 * parseFloat(m[1]) / parseInt(m[2], 10)) + '%';
+        statusEl.textContent = text.replace(/\s*\(.*\)/, '') + '…';
+      },
+      onRuntimeInitialized: function () {
+        barEl.style.width = '100%';
+        overlay.classList.add('hidden');
+        canvas.focus();
+      }
+    };
+
+    window.addEventListener('error', function () {
+      statusEl.textContent = 'Something went wrong. This game needs a browser with WebGL 2 support.';
+      overlay.classList.remove('hidden');
+    });
+    if (!document.createElement('canvas').getContext('webgl2')) {
+      statusEl.textContent = 'Your browser does not support WebGL 2, which this game needs.';
+    }
+  </script>
+  {{{ SCRIPT }}}
+</body>
+</html>

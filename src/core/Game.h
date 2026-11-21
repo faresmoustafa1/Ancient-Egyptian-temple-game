@@ -1,5 +1,5 @@
 #pragma once
-#include <glad/gl.h>
+#include "render/GL.h"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <functional>
@@ -59,6 +59,8 @@ public:
     LaneGrid lanes;
 
 private:
+    void frame();                 // one tick of the main loop (poll, update, draw, swap)
+    static void frameThunk(void* game);
     void update(float dt);
     void draw();
     void drawScene();
@@ -77,6 +79,7 @@ private:
     // letterboxed viewport in framebuffer pixels
     int vpX = 0, vpY = 0, vpW = 1, vpH = 1;
     int fbW = 1, fbH = 1;
+    double lastFrameTime = 0.0;
 
     std::vector<UpdateFn> gameplayUpdates, alwaysUpdates;
     std::vector<DrawFn>   drawHooks[4];

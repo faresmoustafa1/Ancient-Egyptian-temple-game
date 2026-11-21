@@ -4,7 +4,9 @@
 
 GLuint Shader::compile(GLenum type, const char* src) {
     GLuint s = glCreateShader(type);
-    glShaderSource(s, 1, &src, nullptr);
+    // The #version line differs between desktop GL and WebGL, so it is added here.
+    const char* parts[2] = {TEMPLE_GLSL_HEADER, src};
+    glShaderSource(s, 2, parts, nullptr);
     glCompileShader(s);
     int ok = 0;
     glGetShaderiv(s, GL_COMPILE_STATUS, &ok);

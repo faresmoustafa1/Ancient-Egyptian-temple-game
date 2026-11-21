@@ -1,6 +1,15 @@
+# Build output
 build/
-.vs/
-.vscode/
+build-*/
 out/
+site/
 *.exe
 *.o
+*.obj
+
+# Local toolchains (installed by install_tools.py)
+y/
+
+# Editor folders
+.vs/
+.vscode/

@@ -5,6 +5,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <cmath>
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
 
 // Flow: MainMenu -> (Start) Cutscene -> Instructions -> Playing.
 static const GameState START_STATE = GameState::MainMenu;
@@ -25,16 +28,24 @@ static const char* stateName(GameState s) {
 bool Game::init() {
     if (!glfwInit()) { std::cerr << "Failed to init GLFW\n"; return false; }
 
+#ifdef __EMSCRIPTEN__
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);   // WebGL 2
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#endif
 
     window = glfwCreateWindow(1280, 720, "Ancient-Egyptian-Temple", nullptr, nullptr);
     if (!window) { std::cerr << "Failed to create window\n"; glfwTerminate(); return false; }
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
 
+#ifndef __EMSCRIPTEN__
     if (gladLoadGL(glfwGetProcAddress) == 0) { std::cerr << "Failed to init GLAD\n"; return false; }
+#endif
 
     glfwSetWindowUserPointer(window, this);
     glfwSetKeyCallback(window, keyCallback);
@@ -100,7 +111,11 @@ void Game::restart()        { reset(); setState(GameState::Instructions); }
 void Game::goToMainMenu()   { reset(); setState(GameState::MainMenu); }
 void Game::win()            { if (currentState == GameState::Playing) { won = true;  setState(GameState::GameOver); } }
 void Game::lose()           { if (currentState == GameState::Playing) { won = false; setState(GameState::GameOver); } }
+#ifdef __EMSCRIPTEN__
+void Game::requestExit()    { goToMainMenu(); }   // a web page cannot close itself
+#else
 void Game::requestExit()    { if (window) glfwSetWindowShouldClose(window, GLFW_TRUE); }
+#endif
 
 // Keep 16:9 and add black bars when the window has a different shape.
 void Game::updateViewport() {
@@ -220,20 +235,30 @@ void Game::draw() {
     drawScene();
 }
 
-void Game::run() {
-    double last = glfwGetTime();
-    while (!glfwWindowShouldClose(window)) {
-        double now = glfwGetTime();
-        float dt = static_cast<float>(now - last);
-        last = now;
-        if (dt > 0.05f) dt = 0.05f;      // avoid huge jumps (window drag, breakpoints)
+void Game::frame() {
+    double now = glfwGetTime();
+    float dt = static_cast<float>(now - lastFrameTime);
+    lastFrameTime = now;
+    if (dt > 0.05f) dt = 0.05f;      // avoid huge jumps (window drag, breakpoints, hidden tab)
 
-        glfwPollEvents();
-        update(dt);
-        draw();
-        input.endFrame();
-        glfwSwapBuffers(window);
-    }
+    glfwPollEvents();
+    update(dt);
+    draw();
+    input.endFrame();
+    glfwSwapBuffers(window);
+}
+
+void Game::frameThunk(void* game) { static_cast<Game*>(game)->frame(); }
+
+void Game::run() {
+    lastFrameTime = glfwGetTime();
+#ifdef __EMSCRIPTEN__
+    // The browser owns the loop: it calls frame() once per animation frame.
+    // 'true' never returns, so the game objects in main() stay alive.
+    emscripten_set_main_loop_arg(frameThunk, this, 0, true);
+#else
+    while (!glfwWindowShouldClose(window)) frame();
+#endif
 }
 
 void Game::shutdown() {

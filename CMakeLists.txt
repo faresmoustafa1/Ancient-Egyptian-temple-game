@@ -2,15 +2,43 @@
 cmake_minimum_required(VERSION 3.10)
 project(OpenGLStarter)
 
-add_subdirectory(external/glfw-3.5.1)
-add_subdirectory(external/glm)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(OpenGL REQUIRED)
 
 # compile every source file under src/ into the normal game.
 file(GLOB_RECURSE GAME_SOURCES CONFIGURE_DEPENDS src/*.cpp)
+
+# ---------------------------------------------------------------------------
+# Web build (WebAssembly + WebGL 2) - configured with `emcmake cmake`.
+# Emscripten provides GLFW and OpenGL ES itself, so only GLM is needed.
+# ---------------------------------------------------------------------------
+if(EMSCRIPTEN)
+    add_subdirectory(external/glm)
+    add_executable(TempleGame ${GAME_SOURCES})
+    set_target_properties(TempleGame PROPERTIES OUTPUT_NAME "index" SUFFIX ".html")
+    target_include_directories(TempleGame PRIVATE external/miniaudio src)
+    target_compile_definitions(TempleGame PRIVATE GLFW_INCLUDE_NONE)
+    target_compile_options(TempleGame PRIVATE -O2)
+    target_link_libraries(TempleGame PRIVATE glm::glm)
+    target_link_options(TempleGame PRIVATE
+        -O2
+        -sUSE_GLFW=3
+        -sMIN_WEBGL_VERSION=2
+        -sMAX_WEBGL_VERSION=2
+        -sALLOW_MEMORY_GROWTH=1
+        -sENVIRONMENT=web
+        --preload-file "${CMAKE_SOURCE_DIR}/assets@/assets"
+        --shell-file "${CMAKE_SOURCE_DIR}/web/shell.html")
+    set_property(TARGET TempleGame APPEND PROPERTY LINK_DEPENDS "${CMAKE_SOURCE_DIR}/web/shell.html")
+    return()
+endif()
+
+# ---------------------------------------------------------------------------
+# Desktop build (Windows / Linux / macOS) - OpenGL 3.3 core via GLFW + GLAD.
+# ---------------------------------------------------------------------------
+add_subdirectory(external/glfw-3.5.1)
+add_subdirectory(external/glm)
+find_package(OpenGL REQUIRED)
 add_executable(OpenGLStarter ${GAME_SOURCES})
 target_include_directories(OpenGLStarter PRIVATE external/glad/include external/miniaudio src)
 target_compile_definitions(OpenGLStarter PRIVATE GLFW_INCLUDE_NONE)
